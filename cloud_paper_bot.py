@@ -1,15 +1,24 @@
-import os, json, time, glob, importlib.util, requests
+import os, json, time, requests
 import pandas as pd
 from datetime import datetime, timezone, timedelta
 
 BASE_URL = "https://api.india.delta.exchange"
+SYMBOLS = ["BTCUSD", "ETHUSD"]
+TIMEFRAMES = {"5m": 300, "15m": 900, "1h": 3600}
+RR_RATIO = 5.0
+RISK_PER_TRADE = 1000.0
 STATE_FILE = "paper_wallet.json"
 LOG_FILE = "paper_trades_log.csv"
+
 TG_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
 TG_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 IST = timezone(timedelta(hours=5, minutes=30))
 
-TF_SEC = {"5m": 300, "15m": 900, "1h": 3600}
+# आज 15 नवंबर 2026 सुबह 10:00 AM IST का फिक्स शुरुआती समय
+START_FROM_TS = int(datetime(2026, 11, 15, 10, 0, 0, tzinfo=IST).timestamp())
+
+def fmt_ist(ts):
+    return datetime.fromtimestamp(int(ts), tz=IST).strftime("%d-%b %I:%M %p IST")
 
 def send_tg(msg):
     if not TG_TOKEN or not TG_CHAT_ID:
@@ -26,8 +35,26 @@ def send_tg(msg):
 def load_wallet():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, "r") as f:
-            return json.load(f)
-    return {"balance": 100000.0, "open_trades": {}, "total_trades": 0, "wins": 0, "losses": 0}
+            data = json.load(f)
+            if "last_checked_ts" not in data:
+                # पुराना वॉलेट हो तो आज सुबह 10:00 AM से रीसेट करें ताकि सुबह से पूरा कैचअप हो
+                return {
+                    "balance": 100000.0,
+                    "open_trades": {},
+                    "total_trades": 0,
+                    "wins": 0,
+                    "losses": 0,
+                    "last_checked_ts": START_FROM_TS
+                }
+            return data
+    return {
+        "balance": 100000.0,
+        "open_trades": {},
+        "total_trades": 0,
+        "wins": 0,
+        "losses": 0,
+        "last_checked_ts": START_FROM_TS
+    }
 
 def save_wallet(data):
     with open(STATE_FILE, "w") as f:
@@ -38,112 +65,159 @@ def log_trade(row):
     header = not os.path.exists(LOG_FILE)
     df.to_csv(LOG_FILE, mode="a", header=header, index=False)
 
-candle_cache = {}
-def get_candles(symbol, tf):
-    cache_key = f"{symbol}_{tf}"
-    if cache_key in candle_cache:
-        return candle_cache[cache_key]
-    sec = TF_SEC.get(tf, 900)
+def fetch_candles(symbol, resolution, sec, since_ts):
     end = int(time.time())
-    start = end - (sec * 250) # 200 EMA के लिए 250 कैंडल्स
-    url = f"{BASE_URL}/v2/history/candles?resolution={tf}&symbol={symbol}&start={start}&end={end}"
+    # EMA 5 की सटीक गणना के लिए since_ts से 30 कैंडल पहले का डेटा भी लें
+    start = min(since_ts - (sec * 30), end - (sec * 300))
+    url = f"{BASE_URL}/v2/history/candles?resolution={resolution}&symbol={symbol}&start={start}&end={end}"
     r = requests.get(url, timeout=15).json()
     if not r.get("success") or not r.get("result"):
         return None
     df = pd.DataFrame(r["result"]).sort_values("time").reset_index(drop=True)
     df["ema5"] = df["close"].ewm(span=5, adjust=False).mean()
-    df["ema200"] = df["close"].ewm(span=200, adjust=False).mean()
-    candle_cache[cache_key] = df
     return df
 
-def load_strategies():
-    strats = []
-    for path in sorted(glob.glob("strategies/*.py")):
-        name = os.path.basename(path)[:-3]
-        if name.startswith("_"):
-            continue
-        spec = importlib.util.spec_from_file_location(name, path)
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        if hasattr(mod, "check_signal"):
-            strats.append(mod)
-    return strats
-
 wallet = load_wallet()
-now_ist = datetime.now(IST)
-now_str = now_ist.strftime("%d-%b %I:%M %p IST")
+last_ts = int(wallet.get("last_checked_ts", START_FROM_TS))
+now_ts = int(time.time())
+now_str = fmt_ist(now_ts)
 wallet["last_checked"] = now_str
 
-strategies = load_strategies()
-wallet["active_strategies"] = [getattr(s, "STRATEGY_NAME", s.__name__) for s in strategies]
+for sym in SYMBOLS:
+    for tf, sec in TIMEFRAMES.items():
+        key = f"5-EMA Alert|{sym}_{tf}"
+        df = fetch_candles(sym, tf, sec, last_ts)
+        if df is None or len(df) < 15:
+            continue
 
-for mod in strategies:
-    s_name = getattr(mod, "STRATEGY_NAME", mod.__name__)
-    symbols = getattr(mod, "SYMBOLS", ["BTCUSD", "ETHUSD"])
-    timeframes = getattr(mod, "TIMEFRAMES", ["15m"])
-    risk_rs = float(getattr(mod, "RISK_RS", 1000.0))
+        # 1. पहले से खुले ट्रेड को उसकी एंट्री से लेकर अब तक की हर कैंडल पर चेक करें
+        if key in wallet["open_trades"]:
+            t = wallet["open_trades"][key]
+            entry_ts = int(t.get("entry_ts", last_ts))
+            active_df = df[df["time"] >= entry_ts]
+            hit, pnl, hit_time = None, 0.0, now_str
 
-    for sym in symbols:
-        for tf in timeframes:
-            df = get_candles(sym, tf)
-            if df is None or len(df) < 20:
+            for _, row in active_df.iterrows():
+                if t["side"] == "SELL":
+                    if float(row["high"]) >= t["sl"]:
+                        hit, pnl, hit_time = "SL HIT ❌", -RISK_PER_TRADE, fmt_ist(row["time"])
+                        break
+                    elif float(row["low"]) <= t["target"]:
+                        hit, pnl, hit_time = "TARGET HIT 🎯", RISK_PER_TRADE * RR_RATIO, fmt_ist(row["time"])
+                        break
+                else:
+                    if float(row["low"]) <= t["sl"]:
+                        hit, pnl, hit_time = "SL HIT ❌", -RISK_PER_TRADE, fmt_ist(row["time"])
+                        break
+                    elif float(row["high"]) >= t["target"]:
+                        hit, pnl, hit_time = "TARGET HIT 🎯", RISK_PER_TRADE * RR_RATIO, fmt_ist(row["time"])
+                        break
+
+            if hit:
+                wallet["balance"] += pnl
+                wallet["total_trades"] += 1
+                if pnl > 0: wallet["wins"] += 1
+                else: wallet["losses"] += 1
+                del wallet["open_trades"][key]
+                log_trade({
+                    "Exit_Time": hit_time, "Strategy": "5-EMA Alert", "Symbol": sym, "TF": tf,
+                    "Side": t["side"], "Entry": t["entry"], "SL": t["sl"], "Target": t["target"],
+                    "Status": hit, "PnL_Rs": pnl, "Balance_Rs": round(wallet["balance"], 2)
+                })
+                send_tg(
+                    f"<b>{hit} — {sym} ({tf})</b>\n"
+                    f"Side: {t['side']} | Entry: {t['entry']}\n"
+                    f"SL: {t['sl']} | Target: {t['target']}\n"
+                    f"Exit Time: {hit_time}\n"
+                    f"P&L: <b>₹{pnl:+.0f}</b> | Balance: <b>₹{wallet['balance']:,.2f}</b>"
+                )
+            else:
                 continue
 
-            trade_key = f"{s_name}|{sym}_{tf}"
-            curr = df.iloc[-1]
+        # 2. last_ts (सुबह 10:00 AM / पिछली बार) से अब तक की हर कैंडल में छूटे हुए ट्रेड कैचअप करें
+        for idx in range(5, len(df)):
+            if key in wallet["open_trades"]:
+                break  # जब तक एक ट्रेड खुला है, उसी टाइमफ्रेम पर दूसरा न खोलें
 
-            # 1. खुले हुए ट्रेड का SL या Target चेक करें
-            if trade_key in wallet["open_trades"]:
-                t = wallet["open_trades"][trade_key]
-                hit, pnl = None, 0.0
-                if t["side"] == "SELL":
-                    if float(curr["high"]) >= t["sl"]:
-                        hit, pnl = "SL HIT ❌", -t["risk_rs"]
-                    elif float(curr["low"]) <= t["target"]:
-                        hit, pnl = "TARGET HIT 🎯", t["reward_rs"]
-                else:
-                    if float(curr["low"]) <= t["sl"]:
-                        hit, pnl = "SL HIT ❌", -t["risk_rs"]
-                    elif float(curr["high"]) >= t["target"]:
-                        hit, pnl = "TARGET HIT 🎯", t["reward_rs"]
+            brk = df.iloc[idx]
+            brk_ts = int(brk["time"])
+            if brk_ts < last_ts:
+                continue
 
-                if hit:
-                    wallet["balance"] += pnl
+            alert = df.iloc[idx - 1]
+            side, entry, sl, target = None, 0.0, 0.0, 0.0
+
+            if float(alert["low"]) > float(alert["ema5"]) and float(brk["low"]) < float(alert["low"]):
+                entry, sl = float(alert["low"]), float(alert["high"])
+                risk = sl - entry
+                if risk > 0:
+                    side, target = "SELL", round(entry - (risk * RR_RATIO), 2)
+
+            elif float(alert["high"]) < float(alert["ema5"]) and float(brk["high"]) > float(alert["high"]):
+                entry, sl = float(alert["high"]), float(alert["low"])
+                risk = entry - sl
+                if risk > 0:
+                    side, target = "BUY", round(entry + (risk * RR_RATIO), 2)
+
+            if side:
+                brk_time_str = fmt_ist(brk_ts)
+                future_df = df.iloc[idx:]
+                closed_status, closed_pnl, exit_time_str = None, 0.0, None
+
+                for _, frow in future_df.iterrows():
+                    if side == "SELL":
+                        if float(frow["high"]) >= sl:
+                            closed_status, closed_pnl, exit_time_str = "SL HIT ❌", -RISK_PER_TRADE, fmt_ist(frow["time"])
+                            break
+                        elif float(frow["low"]) <= target:
+                            closed_status, closed_pnl, exit_time_str = "TARGET HIT 🎯", RISK_PER_TRADE * RR_RATIO, fmt_ist(frow["time"])
+                            break
+                    else:
+                        if float(frow["low"]) <= sl:
+                            closed_status, closed_pnl, exit_time_str = "SL HIT ❌", -RISK_PER_TRADE, fmt_ist(frow["time"])
+                            break
+                        elif float(frow["high"]) >= target:
+                            closed_status, closed_pnl, exit_time_str = "TARGET HIT 🎯", RISK_PER_TRADE * RR_RATIO, fmt_ist(frow["time"])
+                            break
+
+                if closed_status:
+                    # ट्रेड बीच में ही बना और बंद भी हो गया -> सीधा Closed History में जोड़ें
+                    wallet["balance"] += closed_pnl
                     wallet["total_trades"] += 1
-                    if pnl > 0: wallet["wins"] += 1
+                    if closed_pnl > 0: wallet["wins"] += 1
                     else: wallet["losses"] += 1
-                    del wallet["open_trades"][trade_key]
                     log_trade({
-                        "Exit_Time": now_str, "Strategy": s_name, "Symbol": sym, "TF": tf,
-                        "Side": t["side"], "Entry": t["entry"], "SL": t["sl"], "Target": t["target"],
-                        "Status": hit, "PnL_Rs": pnl, "Balance_Rs": round(wallet["balance"], 2)
+                        "Exit_Time": exit_time_str, "Strategy": "5-EMA Alert", "Symbol": sym, "TF": tf,
+                        "Side": side, "Entry": round(entry, 2), "SL": round(sl, 2), "Target": target,
+                        "Status": closed_status, "PnL_Rs": closed_pnl, "Balance_Rs": round(wallet["balance"], 2)
                     })
                     send_tg(
-                        f"<b>{hit} [{s_name}]</b>\n"
-                        f"{sym} ({tf}) — {t['side']}\n"
-                        f"Entry: {t['entry']} | SL: {t['sl']} | TGT: {t['target']}\n"
-                        f"P&L: <b>₹{pnl:+.0f}</b> | Balance: <b>₹{wallet['balance']:,.2f}</b>"
+                        f"📋 <b>CATCH-UP CLOSED — {sym} ({tf})</b>\n"
+                        f"{side} @ {round(entry, 2)} ({brk_time_str})\n"
+                        f"Result: <b>{closed_status}</b> @ {exit_time_str}\n"
+                        f"P&L: <b>₹{closed_pnl:+.0f}</b> | Balance: <b>₹{wallet['balance']:,.2f}</b>"
                     )
-                continue
+                else:
+                    # ट्रेड बना और अभी भी चल रहा है -> Open Live Positions में डालें
+                    wallet["open_trades"][key] = {
+                        "strategy": "5-EMA Alert",
+                        "side": side,
+                        "entry": round(entry, 2),
+                        "sl": round(sl, 2),
+                        "target": target,
+                        "risk_rs": RISK_PER_TRADE,
+                        "reward_rs": RISK_PER_TRADE * RR_RATIO,
+                        "time": brk_time_str,
+                        "entry_ts": brk_ts
+                    }
+                    icon = "🔴" if side == "SELL" else "🟢"
+                    send_tg(
+                        f"{icon} <b>LIVE OPEN — {sym} ({tf})</b>\n"
+                        f"Side: <b>{side}</b> | Entry: <b>{round(entry, 2)}</b>\n"
+                        f"SL: <b>{round(sl, 2)}</b> | Target (1:5): <b>{target}</b>\n"
+                        f"Entry Time: {brk_time_str}"
+                    )
 
-            # 2. स्ट्रैटेजी फाइल से नया सिग्नल पूछें
-            sig = mod.check_signal(df, now_ist, sym, tf)
-            if sig and sig.get("side") in ("BUY", "SELL"):
-                rr = float(sig.get("rr", 5.0))
-                wallet["open_trades"][trade_key] = {
-                    "strategy": s_name, "side": sig["side"],
-                    "entry": round(float(sig["entry"]), 2),
-                    "sl": round(float(sig["sl"]), 2),
-                    "target": round(float(sig["target"]), 2),
-                    "risk_rs": risk_rs, "reward_rs": risk_rs * rr,
-                    "time": now_str
-                }
-                icon = "🔴" if sig["side"] == "SELL" else "🟢"
-                send_tg(
-                    f"{icon} <b>NEW {sig['side']} [{s_name}]</b>\n"
-                    f"Market: <b>{sym} ({tf})</b>\n"
-                    f"Entry: <b>{sig['entry']}</b> | SL: <b>{sig['sl']}</b> | TGT: <b>{sig['target']}</b>\n"
-                    f"Time: {now_str}"
-                )
-
+# अगली बार के लिए आखिरी पूर्ण कैंडल का समय सेव करें (ताकि चलती कैंडल अधूरी न छूटे)
+wallet["last_checked_ts"] = now_ts - 300
 save_wallet(wallet)
