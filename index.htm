@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delta 24x7 Cloud Trading Hub</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0b1120; color: #f8fafc; padding: 16px; margin: 0; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 20px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .ticker-box { display: flex; gap: 12px; flex-wrap: wrap; }
+        .ticker { background: #0f172a; padding: 8px 14px; border-radius: 8px; border: 1px solid #38bdf8; font-size: 15px; }
+        .card { background: #1e293b; padding: 16px 20px; border-radius: 10px; margin-bottom: 16px; border: 1px solid #334155; overflow-x: auto; }
+        .grid { display: flex; gap: 12px; flex-wrap: wrap; }
+        .stat { flex: 1; min-width: 150px; background: #0f172a; padding: 14px; border-radius: 8px; text-align: center; border: 1px solid #1e293b; }
+        .stat div { color: #94a3b8; font-size: 12px; margin-bottom: 5px; }
+        .stat h2 { margin: 0; font-size: 20px; }
+        .green { color: #22c55e; font-weight: bold; }
+        .red { color: #ef4444; font-weight: bold; }
+        .blue { color: #38bdf8; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; min-width: 600px; }
+        th, td { padding: 10px; border-bottom: 1px solid #334155; text-align: left; }
+        th { background: #0f172a; color: #94a3b8; }
+        .badge-sell { background: #7f1d1d; color: #fecaca; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+        .badge-buy { background: #14532d; color: #bbf7d0; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div>
+            <h2 style="margin:0;">🚀 Delta 24×7 Cloud Trading Hub</h2>
+            <small style="color:#94a3b8;" id="status-txt">Live Delta Feed + Cloud Bot Sync (Auto-Refresh: 10s)</small>
+        </div>
+        <div class="ticker-box">
+            <div class="ticker">BTCUSD: <span class="blue" id="btc-price">Loading...</span></div>
+            <div class="ticker">ETHUSD: <span class="blue" id="eth-price">Loading...</span></div>
+        </div>
+    </div>
+
+    <div class="card grid">
+        <div class="stat"><div>Booked Wallet Balance</div><h2 id="booked-bal">₹1,00,000.00</h2></div>
+        <div class="stat"><div>Running Live MTM</div><h2 id="live-mtm">₹0.00</h2></div>
+        <div class="stat"><div>Total Live Equity</div><h2 id="net-eq">₹1,00,000.00</h2></div>
+        <div class="stat"><div>Overall Net P&L</div><h2 id="net-pnl">₹0.00</h2></div>
+        <div class="stat"><div>Closed Trades (W / L)</div><h2 id="wl-stat">0 (0W / 0L)</h2></div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">🟢 Open Live Cloud Positions (<span id="open-count">0</span>)</h3>
+        <div id="open-area"><p style="color:#94a3b8;">Checking cloud positions...</p></div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">📜 Closed Trade History</h3>
+        <div id="closed-area"><p style="color:#94a3b8;">Loading trade history...</p></div>
+    </div>
+
+    <script>
+        const RISK = 1000.0;
+        function fmtRs(num) {
+            return (num >= 0 ? "+₹" : "-₹") + Math.abs(num).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        async function updateHub() {
+            let prices = { BTCUSD: 0, ETHUSD: 0 };
+            try {
+                const tRes = await fetch("https://api.india.delta.exchange/v2/tickers");
+                const tData = await tRes.json();
+                if (tData.success && tData.result) {
+                    tData.result.forEach(item => {
+                        if (item.symbol === "BTCUSD" || item.symbol === "ETHUSD") {
+                            prices[item.symbol] = parseFloat(item.mark_price || item.close || 0);
+                        }
+                    });
+                }
+                document.getElementById("btc-price").innerText = "$" + prices.BTCUSD.toLocaleString('en-US', {minimumFractionDigits: 2});
+                document.getElementById("eth-price").innerText = "$" + prices.ETHUSD.toLocaleString('en-US', {minimumFractionDigits: 2});
+            } catch (e) {}
+
+            let lastBotRun = "";
+            try {
+                const wRes = await fetch("paper_wallet.json?t=" + Date.now());
+                if (wRes.ok) {
+                    const wallet = await wRes.json();
+                    lastBotRun = wallet.last_checked ? ` | Bot Last Scan: ${wallet.last_checked}` : "";
+                    const openTrades = wallet.open_trades || {};
+                    const keys = Object.keys(openTrades);
+                    document.getElementById("open-count").innerText = keys.length;
+                    document.getElementById("booked-bal").innerText = "₹" + wallet.balance.toLocaleString('en-IN', {minimumFractionDigits: 2});
+                    document.getElementById("wl-stat").innerText = `${wallet.total_trades} (${wallet.wins}W / ${wallet.losses}L)`;
+
+                    let floating = 0;
+                    if (keys.length === 0) {
+                        document.getElementById("open-area").innerHTML = '<p style="color:#94a3b8;">Abhi koi trade open nahi hai — Cloud Bot 5m, 15m aur 1h par 5 EMA Alert Candle dhoondh raha hai...</p>';
+                    } else {
+                        let html = '<table><tr><th>Market & TF</th><th>Side</th><th>Entry</th><th>Live Price</th><th>Stop Loss</th><th>Target (1:5)</th><th>Live MTM</th><th>Time</th></tr>';
+                        keys.forEach(k => {
+                            const t = openTrades[k];
+                            const sym = k.split("_")[0];
+                            const ltp = prices[sym] || t.entry;
+                            const riskPts = Math.abs(t.sl - t.entry);
+                            let mtm = 0;
+                            if (riskPts > 0) {
+                                mtm = t.side === "SELL" ? ((t.entry - ltp) / riskPts) * RISK : ((ltp - t.entry) / riskPts) * RISK;
+                            }
+                            floating += mtm;
+                            const badge = t.side === "SELL" ? '<span class="badge-sell">SELL</span>' : '<span class="badge-buy">BUY</span>';
+                            const cls = mtm >= 0 ? 'green' : 'red';
+                            html += `<tr><td><b>${k}</b></td><td>${badge}</td><td>${t.entry}</td><td class="blue">$${ltp.toFixed(2)}</td><td class="red">${t.sl}</td><td class="green">${t.target}</td><td class="${cls}">${fmtRs(mtm)}</td><td>${t.time}</td></tr>`;
+                        });
+                        html += '</table>';
+                        document.getElementById("open-area").innerHTML = html;
+                    }
+
+                    const totalEq = wallet.balance + floating;
+                    const netPnl = totalEq - 100000.0;
+                    const mtmEl = document.getElementById("live-mtm");
+                    mtmEl.innerText = fmtRs(floating);
+                    mtmEl.className = floating >= 0 ? "green" : "red";
+
+                    const pnlEl = document.getElementById("net-pnl");
+                    pnlEl.innerText = fmtRs(netPnl);
+                    pnlEl.className = netPnl >= 0 ? "green" : "red";
+
+                    document.getElementById("net-eq").innerText = "₹" + totalEq.toLocaleString('en-IN', {minimumFractionDigits: 2});
+                }
+            } catch (e) {}
+
+            try {
+                const cRes = await fetch("paper_trades_log.csv?t=" + Date.now());
+                if (cRes.ok) {
+                    const text = await cRes.text();
+                    const lines = text.trim().split("\n");
+                    if (lines.length > 1) {
+                        let html = '<table><tr><th>Exit Time</th><th>Symbol</th><th>TF</th><th>Side</th><th>Entry</th><th>SL</th><th>Target</th><th>Status</th><th>PnL (₹)</th></tr>';
+                        for (let i = lines.length - 1; i >= 1; i--) {
+                            const cols = lines[i].split(",");
+                            if (cols.length >= 9) {
+                                const pnl = parseFloat(cols[8]);
+                                const cls = pnl > 0 ? 'green' : 'red';
+                                html += `<tr><td>${cols[0]}</td><td><b>${cols[1]}</b></td><td>${cols[2]}</td><td>${cols[3]}</td><td>${cols[4]}</td><td>${cols[5]}</td><td>${cols[6]}</td><td class="${cls}">${cols[7]}</td><td class="${cls}">${fmtRs(pnl)}</td></tr>`;
+                            }
+                        }
+                        html += '</table>';
+                        document.getElementById("closed-area").innerHTML = html;
+                    } else {
+                        document.getElementById("closed-area").innerHTML = '<p style="color:#94a3b8;">Abhi tak koi trade close nahi hua hai.</p>';
+                    }
+                }
+            } catch (e) {}
+            document.getElementById("status-txt").innerText = "Live Refresh: " + new Date().toLocaleTimeString() + lastBotRun;
+        }
+
+        updateHub();
+        setInterval(updateHub, 10000);
+    </script>
+</body>
+</html>
