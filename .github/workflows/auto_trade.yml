@@ -1,0 +1,38 @@
+name: Delta 24x7 Cloud Paper Trader
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Libraries
+        run: pip install requests pandas
+
+      - name: Run Paper Trading Bot
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python cloud_paper_bot.py
+
+      - name: Save Wallet & Trade Logs
+        run: |
+          git config user.name "Delta Paper Bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add paper_wallet.json paper_trades_log.csv || true
+          git commit -m "Update paper trades" || exit 0
+          git push
