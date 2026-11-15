@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delta 24x7 Cloud Trading Hub</title>
+    <title>Delta 24x7 Multi-Strategy Hub</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #0b1120; color: #f8fafc; padding: 16px; margin: 0; }
         .topbar { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 20px; border-radius: 10px; border: 1px solid #334155; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
@@ -17,7 +17,7 @@
         .green { color: #22c55e; font-weight: bold; }
         .red { color: #ef4444; font-weight: bold; }
         .blue { color: #38bdf8; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; min-width: 600px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; min-width: 620px; }
         th, td { padding: 10px; border-bottom: 1px solid #334155; text-align: left; }
         th { background: #0f172a; color: #94a3b8; }
         .badge-sell { background: #7f1d1d; color: #fecaca; padding: 3px 8px; border-radius: 4px; font-weight: bold; }
@@ -27,8 +27,8 @@
 <body>
     <div class="topbar">
         <div>
-            <h2 style="margin:0;">🚀 Delta 24×7 Cloud Trading Hub</h2>
-            <small style="color:#94a3b8;" id="status-txt">Live Delta Feed + Cloud Bot Sync (Auto-Refresh: 10s)</small>
+            <h2 style="margin:0;">🚀 Delta 24×7 Multi-Strategy Hub</h2>
+            <small style="color:#94a3b8;" id="status-txt">Syncing live data...</small>
         </div>
         <div class="ticker-box">
             <div class="ticker">BTCUSD: <span class="blue" id="btc-price">Loading...</span></div>
@@ -46,7 +46,12 @@
 
     <div class="card">
         <h3 style="margin-top:0;">🟢 Open Live Cloud Positions (<span id="open-count">0</span>)</h3>
-        <div id="open-area"><p style="color:#94a3b8;">Checking cloud positions...</p></div>
+        <div id="open-area"><p style="color:#94a3b8;">Checking open positions...</p></div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top:0;">📊 Strategy & Timeframe Breakdown (Profit / Loss Analysis)</h3>
+        <div id="breakdown-area"><p style="color:#94a3b8;">No closed trades yet to compare strategies.</p></div>
     </div>
 
     <div class="card">
@@ -55,7 +60,6 @@
     </div>
 
     <script>
-        const RISK = 1000.0;
         function fmtRs(num) {
             return (num >= 0 ? "+₹" : "-₹") + Math.abs(num).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
@@ -81,7 +85,7 @@
                 const wRes = await fetch("paper_wallet.json?t=" + Date.now());
                 if (wRes.ok) {
                     const wallet = await wRes.json();
-                    lastBotRun = wallet.last_checked ? ` | Bot Last Scan: ${wallet.last_checked}` : "";
+                    lastBotRun = wallet.last_checked ? ` | Last Scan: ${wallet.last_checked}` : "";
                     const openTrades = wallet.open_trades || {};
                     const keys = Object.keys(openTrades);
                     document.getElementById("open-count").innerText = keys.length;
@@ -90,22 +94,25 @@
 
                     let floating = 0;
                     if (keys.length === 0) {
-                        document.getElementById("open-area").innerHTML = '<p style="color:#94a3b8;">Abhi koi trade open nahi hai — Cloud Bot 5m, 15m aur 1h par 5 EMA Alert Candle dhoondh raha hai...</p>';
+                        document.getElementById("open-area").innerHTML = '<p style="color:#94a3b8;">Abhi koi trade open nahi hai — Bot 5m, 15m aur 1h par signals scan kar raha hai...</p>';
                     } else {
-                        let html = '<table><tr><th>Market & TF</th><th>Side</th><th>Entry</th><th>Live Price</th><th>Stop Loss</th><th>Target (1:5)</th><th>Live MTM</th><th>Time</th></tr>';
+                        let html = '<table><tr><th>Strategy</th><th>Market & TF</th><th>Side</th><th>Entry</th><th>Live Price</th><th>SL</th><th>Target</th><th>Live MTM</th><th>Time</th></tr>';
                         keys.forEach(k => {
                             const t = openTrades[k];
-                            const sym = k.split("_")[0];
+                            const mkt = k.includes("|") ? k.split("|")[1] : k;
+                            const sym = mkt.split("_")[0];
+                            const strat = t.strategy || (k.includes("|") ? k.split("|")[0] : "5-EMA");
+                            const riskRs = t.risk_rs || 1000.0;
                             const ltp = prices[sym] || t.entry;
                             const riskPts = Math.abs(t.sl - t.entry);
                             let mtm = 0;
                             if (riskPts > 0) {
-                                mtm = t.side === "SELL" ? ((t.entry - ltp) / riskPts) * RISK : ((ltp - t.entry) / riskPts) * RISK;
+                                mtm = t.side === "SELL" ? ((t.entry - ltp) / riskPts) * riskRs : ((ltp - t.entry) / riskPts) * riskRs;
                             }
                             floating += mtm;
                             const badge = t.side === "SELL" ? '<span class="badge-sell">SELL</span>' : '<span class="badge-buy">BUY</span>';
                             const cls = mtm >= 0 ? 'green' : 'red';
-                            html += `<tr><td><b>${k}</b></td><td>${badge}</td><td>${t.entry}</td><td class="blue">$${ltp.toFixed(2)}</td><td class="red">${t.sl}</td><td class="green">${t.target}</td><td class="${cls}">${fmtRs(mtm)}</td><td>${t.time}</td></tr>`;
+                            html += `<tr><td><b>${strat}</b></td><td>${mkt}</td><td>${badge}</td><td>${t.entry}</td><td class="blue">$${ltp.toFixed(2)}</td><td class="red">${t.sl}</td><td class="green">${t.target}</td><td class="${cls}">${fmtRs(mtm)}</td><td>${t.time}</td></tr>`;
                         });
                         html += '</table>';
                         document.getElementById("open-area").innerHTML = html;
@@ -131,19 +138,36 @@
                     const text = await cRes.text();
                     const lines = text.trim().split("\n");
                     if (lines.length > 1) {
-                        let html = '<table><tr><th>Exit Time</th><th>Symbol</th><th>TF</th><th>Side</th><th>Entry</th><th>SL</th><th>Target</th><th>Status</th><th>PnL (₹)</th></tr>';
+                        let stats = {};
+                        let html = '<table><tr><th>Exit Time</th><th>Strategy</th><th>Symbol</th><th>TF</th><th>Side</th><th>Entry</th><th>SL</th><th>Target</th><th>Status</th><th>PnL (₹)</th></tr>';
                         for (let i = lines.length - 1; i >= 1; i--) {
                             const cols = lines[i].split(",");
-                            if (cols.length >= 9) {
-                                const pnl = parseFloat(cols[8]);
+                            if (cols.length >= 10) {
+                                const strat = cols[1];
+                                const tf = cols[3];
+                                const pnl = parseFloat(cols[9]);
                                 const cls = pnl > 0 ? 'green' : 'red';
-                                html += `<tr><td>${cols[0]}</td><td><b>${cols[1]}</b></td><td>${cols[2]}</td><td>${cols[3]}</td><td>${cols[4]}</td><td>${cols[5]}</td><td>${cols[6]}</td><td class="${cls}">${cols[7]}</td><td class="${cls}">${fmtRs(pnl)}</td></tr>`;
+                                const groupKey = `${strat} (${tf})`;
+                                if (!stats[groupKey]) stats[groupKey] = { count: 0, wins: 0, losses: 0, pnl: 0 };
+                                stats[groupKey].count++;
+                                if (pnl > 0) stats[groupKey].wins++; else stats[groupKey].losses++;
+                                stats[groupKey].pnl += pnl;
+
+                                html += `<tr><td>${cols[0]}</td><td><b>${strat}</b></td><td>${cols[2]}</td><td>${tf}</td><td>${cols[4]}</td><td>${cols[5]}</td><td>${cols[6]}</td><td>${cols[7]}</td><td class="${cls}">${cols[8]}</td><td class="${cls}">${fmtRs(pnl)}</td></tr>`;
                             }
                         }
                         html += '</table>';
                         document.getElementById("closed-area").innerHTML = html;
-                    } else {
-                        document.getElementById("closed-area").innerHTML = '<p style="color:#94a3b8;">Abhi tak koi trade close nahi hua hai.</p>';
+
+                        let bHtml = '<table><tr><th>Strategy & Timeframe</th><th>Total Trades</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>Net P&L (₹)</th></tr>';
+                        Object.keys(stats).forEach(gk => {
+                            const s = stats[gk];
+                            const wr = ((s.wins / s.count) * 100).toFixed(1);
+                            const cls = s.pnl >= 0 ? 'green' : 'red';
+                            bHtml += `<tr><td><b>${gk}</b></td><td>${s.count}</td><td class="green">${s.wins}</td><td class="red">${s.losses}</td><td>${wr}%</td><td class="${cls}">${fmtRs(s.pnl)}</td></tr>`;
+                        });
+                        bHtml += '</table>';
+                        document.getElementById("breakdown-area").innerHTML = bHtml;
                     }
                 }
             } catch (e) {}
