@@ -30,9 +30,7 @@ def load_wallet():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, "r") as f:
             return json.load(f)
-    data = {"balance": 100000.0, "open_trades": {}, "total_trades": 0, "wins": 0, "losses": 0}
-    save_wallet(data)
-    return data
+    return {"balance": 100000.0, "open_trades": {}, "total_trades": 0, "wins": 0, "losses": 0}
 
 def save_wallet(data):
     with open(STATE_FILE, "w") as f:
@@ -56,6 +54,7 @@ def fetch_candles(symbol, resolution, sec):
 
 wallet = load_wallet()
 now_str = datetime.now(IST).strftime("%d-%b %I:%M %p IST")
+wallet["last_checked"] = now_str
 print(f"[{now_str}] Cloud Scan Running | Balance: Rs.{wallet['balance']:.2f}")
 
 for sym in SYMBOLS:
@@ -88,7 +87,6 @@ for sym in SYMBOLS:
                 if pnl > 0: wallet["wins"] += 1
                 else: wallet["losses"] += 1
                 del wallet["open_trades"][key]
-                save_wallet(wallet)
                 log_trade({
                     "Exit_Time": now_str, "Symbol": sym, "TF": tf, "Side": t["side"],
                     "Entry": t["entry"], "SL": t["sl"], "Target": t["target"],
@@ -109,7 +107,6 @@ for sym in SYMBOLS:
             if risk > 0:
                 target = round(entry - (risk * RR_RATIO), 2)
                 wallet["open_trades"][key] = {"side": "SELL", "entry": entry, "sl": sl, "target": target, "time": now_str}
-                save_wallet(wallet)
                 send_tg(
                     f"🔴 <b>NEW PAPER SELL — {key}</b>\n"
                     f"Entry: <b>{entry}</b>\n"
@@ -124,7 +121,6 @@ for sym in SYMBOLS:
             if risk > 0:
                 target = round(entry + (risk * RR_RATIO), 2)
                 wallet["open_trades"][key] = {"side": "BUY", "entry": entry, "sl": sl, "target": target, "time": now_str}
-                save_wallet(wallet)
                 send_tg(
                     f"🟢 <b>NEW PAPER BUY — {key}</b>\n"
                     f"Entry: <b>{entry}</b>\n"
@@ -132,3 +128,5 @@ for sym in SYMBOLS:
                     f"Target (1:5): <b>{target}</b>\n"
                     f"Balance: ₹{wallet['balance']:,.2f} | {now_str}"
                 )
+
+save_wallet(wallet)
