@@ -1,18 +1,7 @@
 {
     "rule_version": "v2_sell5_buy15_nov15",
-    "balance": 138000.0,
+    "balance": 134000.0,
     "open_trades": {
-        "EMA-5/15|BTCUSD_5m": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 64422.5,
-            "sl": 64200.0,
-            "target": 65535.0,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "16-Nov 09:45 PM IST",
-            "entry_ts": 1794845700
-        },
         "EMA-5/15|BTCUSD_15m": {
             "strategy": "SELL-5EMA / BUY-15EMA",
             "side": "SELL",
@@ -67,11 +56,22 @@
             "reward_rs": 5000.0,
             "time": "15-Nov 01:30 PM IST",
             "entry_ts": 1794729600
+        },
+        "EMA-5/15|BTCUSD_5m": {
+            "strategy": "SELL-5EMA / BUY-15EMA",
+            "side": "BUY",
+            "entry": 64247.5,
+            "sl": 64161.0,
+            "target": 64680.0,
+            "risk_rs": 1000.0,
+            "reward_rs": 5000.0,
+            "time": "17-Nov 02:50 PM IST",
+            "entry_ts": 1794907200
         }
     },
-    "total_trades": 232,
+    "total_trades": 236,
     "wins": 45,
-    "losses": 187,
-    "last_checked_ts": 1794904079,
-    "last_checked": "17-Nov 02:02 PM IST"
+    "losses": 191,
+    "last_checked_ts": 1794907913,
+    "last_checked": "17-Nov 03:06 PM IST"
 }
