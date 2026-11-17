@@ -56,11 +56,22 @@
             "reward_rs": 5000.0,
             "time": "17-Nov 11:30 PM IST",
             "entry_ts": 1794938400
+        },
+        "EMA-5/15|BTCUSD_1h": {
+            "strategy": "SELL-5EMA / BUY-15EMA",
+            "side": "BUY",
+            "entry": 63888.0,
+            "sl": 63637.0,
+            "target": 65143.0,
+            "risk_rs": 1000.0,
+            "reward_rs": 5000.0,
+            "time": "18-Nov 01:30 AM IST",
+            "entry_ts": 1794945600
         }
     },
     "total_trades": 265,
     "wins": 50,
     "losses": 215,
-    "last_checked_ts": 1794943800,
-    "last_checked": "18-Nov 01:05 AM IST"
+    "last_checked_ts": 1794946908,
+    "last_checked": "18-Nov 01:56 AM IST"
 }
