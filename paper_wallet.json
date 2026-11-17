@@ -1,5 +1,5 @@
 {
-    "balance": 87000.0,
+    "balance": 85000.0,
     "open_trades": {
         "5-EMA Alert|BTCUSD_15m": {
             "strategy": "5-EMA Alert",
@@ -57,9 +57,9 @@
             "entry_ts": 1794870000
         }
     },
-    "total_trades": 61,
+    "total_trades": 63,
     "wins": 8,
-    "losses": 53,
-    "last_checked_ts": 1794871201,
-    "last_checked": "17-Nov 04:55 AM IST"
+    "losses": 55,
+    "last_checked_ts": 1794873734,
+    "last_checked": "17-Nov 05:37 AM IST"
 }
