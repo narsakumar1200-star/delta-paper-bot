@@ -1,5 +1,5 @@
 {
-    "balance": 84000.0,
+    "balance": 89000.0,
     "open_trades": {
         "5-EMA Alert|BTCUSD_15m": {
             "strategy": "5-EMA Alert",
@@ -58,19 +58,19 @@
         },
         "5-EMA Alert|BTCUSD_5m": {
             "strategy": "5-EMA Alert",
-            "side": "BUY",
-            "entry": 64460.5,
-            "sl": 64355.0,
-            "target": 64988.0,
+            "side": "SELL",
+            "entry": 65013.0,
+            "sl": 65180.0,
+            "target": 64178.0,
             "risk_rs": 1000.0,
             "reward_rs": 5000.0,
-            "time": "17-Nov 08:05 AM IST",
-            "entry_ts": 1794882900
+            "time": "17-Nov 09:10 AM IST",
+            "entry_ts": 1794886800
         }
     },
-    "total_trades": 64,
-    "wins": 8,
+    "total_trades": 65,
+    "wins": 9,
     "losses": 56,
-    "last_checked_ts": 1794884986,
-    "last_checked": "17-Nov 08:44 AM IST"
+    "last_checked_ts": 1794888380,
+    "last_checked": "17-Nov 09:41 AM IST"
 }
