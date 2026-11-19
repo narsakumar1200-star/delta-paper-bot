@@ -1,18 +1,7 @@
 {
     "rule_version": "v2_sell5_buy15_nov15",
-    "balance": 113000.0,
+    "balance": 124000.0,
     "open_trades": {
-        "EMA-5/15|BTCUSD_1h": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "SELL",
-            "entry": 64695.5,
-            "sl": 65243.0,
-            "target": 61958.0,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "18-Nov 05:30 AM IST",
-            "entry_ts": 1794960000
-        },
         "EMA-5/15|ETHUSD_15m": {
             "strategy": "SELL-5EMA / BUY-15EMA",
             "side": "BUY",
@@ -38,40 +27,18 @@
         "EMA-5/15|BTCUSD_5m": {
             "strategy": "SELL-5EMA / BUY-15EMA",
             "side": "SELL",
-            "entry": 63051.0,
-            "sl": 63292.0,
-            "target": 61846.0,
+            "entry": 62180.0,
+            "sl": 62304.0,
+            "target": 61560.0,
             "risk_rs": 1000.0,
             "reward_rs": 5000.0,
-            "time": "19-Nov 11:10 PM IST",
-            "entry_ts": 1795110000
-        },
-        "EMA-5/15|BTCUSD_15m": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 62341.0,
-            "sl": 62066.5,
-            "target": 63713.5,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "20-Nov 01:45 AM IST",
-            "entry_ts": 1795119300
-        },
-        "EMA-5/15|ETHUSD_5m": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "SELL",
-            "entry": 1777.55,
-            "sl": 1782.3,
-            "target": 1753.8,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "20-Nov 01:00 AM IST",
-            "entry_ts": 1795116600
+            "time": "20-Nov 02:25 AM IST",
+            "entry_ts": 1795121700
         }
     },
-    "total_trades": 353,
-    "wins": 61,
-    "losses": 292,
-    "last_checked_ts": 1795119671,
-    "last_checked": "20-Nov 01:56 AM IST"
+    "total_trades": 366,
+    "wins": 65,
+    "losses": 301,
+    "last_checked_ts": 1795122820,
+    "last_checked": "20-Nov 02:48 AM IST"
 }
