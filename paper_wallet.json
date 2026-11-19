@@ -1,6 +1,6 @@
 {
     "rule_version": "v2_sell5_buy15_nov15",
-    "balance": 123000.0,
+    "balance": 117000.0,
     "open_trades": {
         "EMA-5/15|BTCUSD_1h": {
             "strategy": "SELL-5EMA / BUY-15EMA",
@@ -35,17 +35,6 @@
             "time": "18-Nov 10:30 PM IST",
             "entry_ts": 1795021200
         },
-        "EMA-5/15|BTCUSD_5m": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 63745.0,
-            "sl": 63660.0,
-            "target": 64170.0,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "19-Nov 04:45 PM IST",
-            "entry_ts": 1795086900
-        },
         "EMA-5/15|BTCUSD_15m": {
             "strategy": "SELL-5EMA / BUY-15EMA",
             "side": "SELL",
@@ -57,21 +46,32 @@
             "time": "19-Nov 05:30 PM IST",
             "entry_ts": 1795089600
         },
+        "EMA-5/15|BTCUSD_5m": {
+            "strategy": "SELL-5EMA / BUY-15EMA",
+            "side": "BUY",
+            "entry": 63745.0,
+            "sl": 63540.0,
+            "target": 64770.0,
+            "risk_rs": 1000.0,
+            "reward_rs": 5000.0,
+            "time": "19-Nov 06:00 PM IST",
+            "entry_ts": 1795091400
+        },
         "EMA-5/15|ETHUSD_5m": {
             "strategy": "SELL-5EMA / BUY-15EMA",
             "side": "BUY",
-            "entry": 1803.55,
-            "sl": 1801.05,
-            "target": 1816.05,
+            "entry": 1799.2,
+            "sl": 1794.75,
+            "target": 1821.45,
             "risk_rs": 1000.0,
             "reward_rs": 5000.0,
-            "time": "19-Nov 04:50 PM IST",
-            "entry_ts": 1795087200
+            "time": "19-Nov 06:05 PM IST",
+            "entry_ts": 1795091700
         }
     },
-    "total_trades": 325,
+    "total_trades": 331,
     "wins": 58,
-    "losses": 267,
-    "last_checked_ts": 1795089590,
-    "last_checked": "19-Nov 05:34 PM IST"
+    "losses": 273,
+    "last_checked_ts": 1795094014,
+    "last_checked": "19-Nov 06:48 PM IST"
 }
