@@ -1,6 +1,6 @@
 {
     "rule_version": "v2_sell5_buy15_nov15",
-    "balance": 117000.0,
+    "balance": 118000.0,
     "open_trades": {
         "EMA-5/15|BTCUSD_1h": {
             "strategy": "SELL-5EMA / BUY-15EMA",
@@ -35,43 +35,32 @@
             "time": "18-Nov 10:30 PM IST",
             "entry_ts": 1795021200
         },
-        "EMA-5/15|BTCUSD_15m": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "SELL",
-            "entry": 63911.0,
-            "sl": 64056.0,
-            "target": 63186.0,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "19-Nov 05:30 PM IST",
-            "entry_ts": 1795089600
-        },
         "EMA-5/15|BTCUSD_5m": {
             "strategy": "SELL-5EMA / BUY-15EMA",
             "side": "BUY",
-            "entry": 63745.0,
-            "sl": 63540.0,
-            "target": 64770.0,
+            "entry": 63441.0,
+            "sl": 63174.5,
+            "target": 64773.5,
             "risk_rs": 1000.0,
             "reward_rs": 5000.0,
-            "time": "19-Nov 06:00 PM IST",
-            "entry_ts": 1795091400
+            "time": "19-Nov 08:55 PM IST",
+            "entry_ts": 1795101900
         },
         "EMA-5/15|ETHUSD_5m": {
             "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 1799.2,
-            "sl": 1794.75,
-            "target": 1821.45,
+            "side": "SELL",
+            "entry": 1805.75,
+            "sl": 1811.65,
+            "target": 1776.25,
             "risk_rs": 1000.0,
             "reward_rs": 5000.0,
-            "time": "19-Nov 06:05 PM IST",
-            "entry_ts": 1795091700
+            "time": "19-Nov 08:40 PM IST",
+            "entry_ts": 1795101000
         }
     },
-    "total_trades": 331,
-    "wins": 58,
-    "losses": 273,
-    "last_checked_ts": 1795098225,
-    "last_checked": "19-Nov 07:58 PM IST"
+    "total_trades": 336,
+    "wins": 59,
+    "losses": 277,
+    "last_checked_ts": 1795101777,
+    "last_checked": "19-Nov 08:57 PM IST"
 }
