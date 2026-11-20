@@ -1,77 +1,22 @@
 {
     "rule_version": "v2_sell5_buy15_nov15",
-    "balance": 128000.0,
+    "balance": 123000.0,
     "open_trades": {
-        "EMA-5/15|ETHUSD_15m": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 1748.6,
-            "sl": 1732.5,
-            "target": 1829.1,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "18-Nov 10:30 PM IST",
-            "entry_ts": 1795021200
-        },
-        "EMA-5/15|ETHUSD_1h": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 1769.85,
-            "sl": 1732.0,
-            "target": 1959.1,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "18-Nov 10:30 PM IST",
-            "entry_ts": 1795021200
-        },
-        "EMA-5/15|BTCUSD_15m": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 61687.5,
-            "sl": 61390.0,
-            "target": 63175.0,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "20-Nov 03:15 AM IST",
-            "entry_ts": 1795124700
-        },
-        "EMA-5/15|ETHUSD_5m": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 1744.6,
-            "sl": 1735.15,
-            "target": 1791.85,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "20-Nov 03:20 AM IST",
-            "entry_ts": 1795125000
-        },
-        "EMA-5/15|BTCUSD_1h": {
-            "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "BUY",
-            "entry": 62210.0,
-            "sl": 61745.5,
-            "target": 64532.5,
-            "risk_rs": 1000.0,
-            "reward_rs": 5000.0,
-            "time": "20-Nov 05:30 AM IST",
-            "entry_ts": 1795132800
-        },
         "EMA-5/15|BTCUSD_5m": {
             "strategy": "SELL-5EMA / BUY-15EMA",
-            "side": "SELL",
-            "entry": 62360.0,
-            "sl": 62499.0,
-            "target": 61665.0,
+            "side": "BUY",
+            "entry": 61517.5,
+            "sl": 61260.0,
+            "target": 62805.0,
             "risk_rs": 1000.0,
             "reward_rs": 5000.0,
-            "time": "20-Nov 06:55 AM IST",
-            "entry_ts": 1795137900
+            "time": "20-Nov 07:45 AM IST",
+            "entry_ts": 1795140900
         }
     },
-    "total_trades": 374,
-    "wins": 67,
-    "losses": 307,
-    "last_checked_ts": 1795138648,
-    "last_checked": "20-Nov 07:12 AM IST"
+    "total_trades": 385,
+    "wins": 68,
+    "losses": 317,
+    "last_checked_ts": 1795141878,
+    "last_checked": "20-Nov 08:06 AM IST"
 }
