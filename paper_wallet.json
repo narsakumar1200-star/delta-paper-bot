@@ -1,6 +1,6 @@
 {
     "rule_version": "v2_sell5_buy15_nov15",
-    "balance": 58000.0,
+    "balance": 63000.0,
     "open_trades": {
         "EMA-5/15|ETHUSD_1h": {
             "strategy": "SELL-5EMA / BUY-15EMA",
@@ -58,9 +58,9 @@
             "entry_ts": 1795365900
         }
     },
-    "total_trades": 504,
-    "wins": 77,
+    "total_trades": 505,
+    "wins": 78,
     "losses": 427,
-    "last_checked_ts": 1795378645,
-    "last_checked": "23-Nov 01:52 AM IST"
+    "last_checked_ts": 1795381382,
+    "last_checked": "23-Nov 02:38 AM IST"
 }
