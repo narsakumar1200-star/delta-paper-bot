@@ -1,6 +1,6 @@
 {
     "rule_version": "v2_sell5_buy15_nov15",
-    "balance": 116000.0,
+    "balance": 114000.0,
     "open_trades": {
         "EMA-5/15|BTCUSD_1h": {
             "strategy": "SELL-5EMA / BUY-15EMA",
@@ -58,9 +58,9 @@
             "entry_ts": 1795446000
         }
     },
-    "total_trades": 554,
+    "total_trades": 556,
     "wins": 95,
-    "losses": 459,
-    "last_checked_ts": 1795478417,
-    "last_checked": "24-Nov 05:35 AM IST"
+    "losses": 461,
+    "last_checked_ts": 1795482413,
+    "last_checked": "24-Nov 06:41 AM IST"
 }
